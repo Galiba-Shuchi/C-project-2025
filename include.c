@@ -5,8 +5,8 @@
 
 void add_course();
 void show_courses();
-void show_question()
-;void add_question();
+void show_question();
+void add_question();
 void delete_question();
 void update_question();
 void admin_menu();

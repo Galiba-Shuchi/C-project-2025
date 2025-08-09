@@ -1,0 +1,479 @@
+      
+        }
+        fprintf(temp, "%s|%s\n", c.course_name, c.course_code);
+    }
+
+    fclose(fp);
+    fclose(temp);
+
+    if (!found) {
+        printf("Course with code %s not found.\n", code);
+        remove("temp.txt");
+        return;
+    }
+
+    remove("course.txt");
+    rename("temp.txt", "course.txt");
+    printf("Course updated successfully.\n");
+}
+
+// Delete Course Function
+void deleteCourse() {
+    char adminCode[50];
+    const char *correctAdminCode = "ADMIN123";
+
+    printf("Enter admin verification code to delete course: ");
+    scanf("%49s", adminCode);
+
+    if (strcmp(adminCode, correctAdminCode) != 0) {
+        printf("❌ Access denied. Invalid admin code.\n");
+        return;
+    }
+
+    char code[20];
+    printf("Enter course code to delete: ");
+    scanf("%19s", code);
+
+    FILE *fp = fopen("course.txt", "r");
+    FILE *temp = fopen("temp.txt", "w");
+    if (!fp || !temp) {
+        perror("File error");
+        if (fp) fclose(fp);
+        if (temp) fclose(temp);
+        return;
+    }
+
+    Course c;
+    int found = 0;
+
+    while (fscanf(fp, "%99[^|]|%19[^\n]\n", c.course_name, c.course_code) == 2) {
+        if (strcmp(c.course_code, code) == 0) {
+            found = 1;
+            // skip writing to delete course
+            continue;
+        }
+        fprintf(temp, "%s|%s\n", c.course_name, c.course_code);
+    }
+
+    fclose(fp);
+    fclose(temp);
+
+    if (!found) {
+        printf("Course with code %s not found.\n", code);
+        remove("temp.txt");
+        return;
+    }
+
+    remove("course.txt");
+    rename("temp.txt", "course.txt");
+
+    printf("Course deleted successfully.\n");
+}
+
+// Add Question Function
+void addQuestion() {
+    MCQ q;
+    printf("Enter course code: ");
+    scanf("%19s", q.course_code);
+    clearInputBuffer();
+
+    printf("Enter question: ");
+    fgets(q.question, sizeof(q.question), stdin);
+    q.question[strcspn(q.question, "\n")] = '\0';
+
+    printf("Enter option A: ");
+    fgets(q.option_a, sizeof(q.option_a), stdin);
+    q.option_a[strcspn(q.option_a, "\n")] = '\0';
+
+    printf("Enter option B: ");
+    fgets(q.option_b, sizeof(q.option_b), stdin);
+    q.option_b[strcspn(q.option_b, "\n")] = '\0';
+
+    printf("Enter option C: ");
+    fgets(q.option_c, sizeof(q.option_c), stdin);
+    q.option_c[strcspn(q.option_c, "\n")] = '\0';
+
+    printf("Enter option D: ");
+    fgets(q.option_d, sizeof(q.option_d), stdin);
+    q.option_d[strcspn(q.option_d, "\n")] = '\0';
+
+    printf("Enter correct answer (a/b/c/d): ");
+    scanf(" %c", &q.check);
+    q.check = tolower(q.check);
+
+    FILE *fp = fopen("mcq.txt", "a");
+    if (!fp) {
+        perror("File open error");
+        return;
+    }
+
+    fprintf(fp, "%s|%s|%s|%s|%s|%s|%c\n", q.course_code, q.question, q.option_a, q.option_b, q.option_c, q.option_d, q.check);
+    fclose(fp);
+
+    printf("Question added successfully.\n");
+}
+
+// Show Questions for Admin Function
+void showQuestionsForAdmin() {
+    FILE *fp = fopen("mcq.txt", "r");
+    if (!fp) {
+        printf("No questions found.\n");
+        return;
+    }
+
+    MCQ q;
+    printf("MCQ Questions with answers (Admin view):\n");
+    printf("---------------------------------------\n");
+    while (fscanf(fp, "%19[^|]|%299[^|]|%99[^|]|%99[^|]|%99[^|]|%99[^|]|%c\n",
+                  q.course_code, q.question, q.option_a, q.option_b, q.option_c, q.option_d, &q.check) == 7) {
+        printf("Course Code: %s\nQuestion: %s\n", q.course_code, q.question);
+        printf("A) %s\nB) %s\nC) %s\nD) %s\n", q.option_a, q.option_b, q.option_c, q.option_d);
+        printf("Correct Answer: %c\n", q.check);
+        printf("---------------------------------------\n");
+    }
+    fclose(fp);
+}
+
+// Update Question Function
+void updateQuestion() {
+    char courseCode[20];
+    printf("Enter course code of the question to update: ");
+    scanf("%19s", courseCode);
+    clearInputBuffer();
+
+    char oldQuestion[300];
+    printf("Enter the exact question text to update: ");
+    fgets(oldQuestion, sizeof(oldQuestion), stdin);
+    oldQuestion[strcspn(oldQuestion, "\n")] = '\0';
+
+    FILE *fp = fopen("mcq.txt", "r");
+    FILE *temp = fopen("temp.txt", "w");
+    if (!fp || !temp) {
+        perror("File error");
+        if (fp) fclose(fp);
+        if (temp) fclose(temp);
+        return;
+    }
+
+    MCQ q;
+    int found = 0;
+
+    while (fscanf(fp, "%19[^|]|%299[^|]|%99[^|]|%99[^|]|%99[^|]|%99[^|]|%c\n",
+                  q.course_code, q.question, q.option_a, q.option_b, q.option_c, q.option_d, &q.check) == 7) {
+        if (strcmp(q.course_code, courseCode) == 0 && strcmp(q.question, oldQuestion) == 0) {
+            found = 1;
+            printf("Enter new question text: ");
+            fgets(q.question, sizeof(q.question), stdin);
+            q.question[strcspn(q.question, "\n")] = '\0';
+
+            printf("Enter option A: ");
+            fgets(q.option_a, sizeof(q.option_a), stdin);
+            q.option_a[strcspn(q.option_a, "\n")] = '\0';
+
+            printf("Enter option B: ");
+            fgets(q.option_b, sizeof(q.option_b), stdin);
+            q.option_b[strcspn(q.option_b, "\n")] = '\0';
+
+            printf("Enter option C: ");
+            fgets(q.option_c, sizeof(q.option_c), stdin);
+            q.option_c[strcspn(q.option_c, "\n")] = '\0';
+
+            printf("Enter option D: ");
+            fgets(q.option_d, sizeof(q.option_d), stdin);
+            q.option_d[strcspn(q.option_d, "\n")] = '\0';
+
+            printf("Enter correct answer (a/b/c/d): ");
+            scanf(" %c", &q.check);
+            q.check = tolower(q.check);
+            clearInputBuffer();
+        }
+        fprintf(temp, "%s|%s|%s|%s|%s|%s|%c\n", q.course_code, q.question, q.option_a, q.option_b, q.option_c, q.option_d, q.check);
+    }
+
+    fclose(fp);
+    fclose(temp);
+
+    if (!found) {
+        printf("Question not found.\n");
+        remove("temp.txt");
+        return;
+    }
+
+    remove("mcq.txt");
+    rename("temp.txt", "mcq.txt");
+    printf("Question updated successfully.\n");
+}
+
+// Delete Question Function
+void deleteQuestion() {
+    char courseCode[20];
+    printf("Enter course code of the question to delete: ");
+    scanf("%19s", courseCode);
+
+    char questionText[300];
+    printf("Enter the exact question text to delete: ");
+    clearInputBuffer();
+    fgets(questionText, sizeof(questionText), stdin);
+    questionText[strcspn(questionText, "\n")] = '\0';
+
+    FILE *fp = fopen("mcq.txt", "r");
+    FILE *temp = fopen("temp.txt", "w");
+    if (!fp || !temp) {
+        perror("File error");
+        if (fp) fclose(fp);
+        if (temp) fclose(temp);
+        return;
+    }
+
+    MCQ q;
+    int found = 0;
+
+    while (fscanf(fp, "%19[^|]|%299[^|]|%99[^|]|%99[^|]|%99[^|]|%99[^|]|%c\n",
+                  q.course_code, q.question, q.option_a, q.option_b, q.option_c, q.option_d, &q.check) == 7) {
+        if (strcmp(q.course_code, courseCode) == 0 && strcmp(q.question, questionText) == 0) {
+            found = 1;
+            // skip writing to delete question
+            continue;
+        }
+        fprintf(temp, "%s|%s|%s|%s|%s|%s|%c\n", q.course_code, q.question, q.option_a, q.option_b, q.option_c, q.option_d, q.check);
+    }
+
+    fclose(fp);
+    fclose(temp);
+
+    if (!found) {
+        printf("Question not found.\n");
+        remove("temp.txt");
+        return;
+    }
+
+    remove("mcq.txt");
+    rename("temp.txt", "mcq.txt");
+    printf("Question deleted successfully.\n");
+}
+
+// Show Questions for Teacher Function
+void showQuestionsForTeacher(const char *course_code) {
+    FILE *fp = fopen("mcq.txt", "r");
+    if (!fp) {
+        printf("No questions available.\n");
+        return;
+    }
+
+    MCQ q;
+    int found = 0;
+
+    printf("Questions for course %s:\n\n", course_code);
+    while (fscanf(fp, "%19[^|]|%299[^|]|%99[^|]|%99[^|]|%99[^|]|%99[^|]|%c\n",
+                  q.course_code, q.question, q.option_a, q.option_b, q.option_c, q.option_d, &q.check) == 7) {
+        if (strcmp(q.course_code, course_code) == 0) {
+            found = 1;
+            printf("Q: %s\n", q.question);
+            printf("a) %s\n", q.option_a);
+            printf("b) %s\n", q.option_b);
+            printf("c) %s\n", q.option_c);
+            printf("d) %s\n", q.option_d);
+            printf("Correct answer: %c\n", q.check);
+            printf("------------------------------\n");
+        }
+    }
+
+    fclose(fp);
+
+    if (!found) {
+        printf("No questions found for this course.\n");
+    }
+}
+
+// Function to conduct exam
+void studentExam(const char *student_id, const char *course_code) {
+    FILE *fp = fopen("mcq.txt", "r");
+    if (!fp) {
+        printf("No questions available.\n");
+        return;
+    }
+
+    MCQ questions[100];
+    int total_questions = 0;
+
+    // Load only questions for the requested course_code
+    while (fscanf(fp, "%19[^|]|%299[^|]|%99[^|]|%99[^|]|%99[^|]|%99[^|]|%c\n",
+                  questions[total_questions].course_code,
+                  questions[total_questions].question,
+                  questions[total_questions].option_a,
+                  questions[total_questions].option_b,
+                  questions[total_questions].option_c,
+                  questions[total_questions].option_d,
+                  &questions[total_questions].check) == 7) {
+        if (strcmp(questions[total_questions].course_code, course_code) == 0) {
+            total_questions++;
+            if (total_questions >= 100) break;
+        }
+    }
+    fclose(fp);
+
+    if (total_questions == 0) {
+        printf("No questions found for course %s.\n", course_code);
+        return;
+    }
+
+    printf("Starting exam for course: %s\n", course_code);
+    printf("Total questions: %d\n", total_questions);
+
+    int score = 0;
+    WrongAnswer wrongAnswers[100];
+    int wrongCount = 0;
+
+    for (int i = 0; i < total_questions; i++) {
+        printf("\nQ%d: %s\n", i + 1, questions[i].question);
+        printf("a) %s\n", questions[i].option_a);
+        printf("b) %s\n", questions[i].option_b);
+        printf("c) %s\n", questions[i].option_c);
+        printf("d) %s\n", questions[i].option_d);
+
+        char ans;
+        do {
+            printf("Enter your answer (a/b/c/d): ");
+            scanf(" %c", &ans);
+            ans = tolower(ans);
+        } while (ans != 'a' && ans != 'b' && ans != 'c' && ans != 'd');
+
+        if (ans == questions[i].check) {
+            score++;
+        } else {
+            // Store wrong answer details
+            strcpy(wrongAnswers[wrongCount].question, questions[i].question);
+            wrongAnswers[wrongCount].correct_answer = questions[i].check;
+            wrongAnswers[wrongCount].student_answer = ans;
+            wrongCount++;
+        }
+    }
+
+    printf("\nExam finished! Your score: %d out of %d\n", score, total_questions);
+
+    // Save exam result
+    FILE *resfp = fopen("exam_results.txt", "a");
+    if (resfp) {
+        fprintf(resfp, "%s|%s|%d\n", student_id, course_code, score);
+        fclose(resfp);
+    } else {
+        printf("Failed to save exam result.\n");
+    }
+
+    // Save wrong answers for review later
+    FILE *wfp = fopen("wrong_answers.txt", "a");
+    if (wfp) {
+        for (int i = 0; i < wrongCount; i++) {
+            fprintf(wfp, "%s|%s|%c|%c\n", student_id, wrongAnswers[i].question, wrongAnswers[i].correct_answer, wrongAnswers[i].student_answer);
+        }
+        fclose(wfp);
+    }
+
+    // Show review option
+    char choice;
+    printf("Do you want to review your wrong answers? (y/n): ");
+    scanf(" %c", &choice);
+    if (tolower(choice) == 'y') {
+        printf("\nWrong answers review:\n");
+        for (int i = 0; i < wrongCount; i++) {
+            printf("Q: %s\n", wrongAnswers[i].question);
+            printf("Your answer: %c | Correct answer: %c\n", wrongAnswers[i].student_answer, wrongAnswers[i].correct_answer);
+            printf("-----------------------------\n");
+        }
+    }
+}
+
+void examRules() {
+    printf("Exam Rules:\n");
+    printf("1. No preview of questions before exam.\n");
+    printf("2. Answer all questions carefully.\n");
+    printf("3. No cheating allowed.\n");
+    printf("4. Exam will be timed (if applicable).\n");
+    printf("5. Once exam is finished, results will be displayed.\n\n");
+}
+
+void addExamResult(ExamResult *result) {
+    FILE *fp = fopen("exam_results.txt", "a");
+    if (!fp) {
+        printf("Error: Unable to open results file.\n");
+        return;
+    }
+    fprintf(fp, "%s|%s|%d\n", result->student_id, result->course_code, result->score);
+    fclose(fp);
+}
+
+void displayExamResult(const ExamResult *result) {
+    printf("Student ID: %s\n", result->student_id);
+    printf("Course Code: %s\n", result->course_code);
+    printf("Score: %d\n", result->score);
+    printf("-------------------------\n");
+}
+
+void showAllResults(const char *student_id) {
+    FILE *fp = fopen("exam_results.txt", "r");
+    if (!fp) {
+        printf("No exam results found.\n");
+        return;
+    }
+
+    ExamResult result;
+    int found = 0;
+
+    printf("Exam Results for Student ID: %s\n", student_id);
+    printf("------------------------------\n");
+
+    while (fscanf(fp, "%19[^|]|%19[^|]|%d\n", result.student_id, result.course_code, &result.score) == 3) {
+        if (strcmp(result.student_id, student_id) == 0) {
+            displayExamResult(&result);
+            found = 1;
+        }
+    }
+
+    fclose(fp);
+
+    if (!found) {
+        printf("No exam results found for this student.\n");
+    }
+}
+
+// Add counseling
+void addCounseling(const Counseling *c) {
+    FILE *fp = fopen(COUNSELING_FILE, "a");
+    if (!fp) {
+        printf("Error opening counseling file.\n");
+        return;
+    }
+    fprintf(fp, "%s|%s|%s|%s|%s|%s|%s\n", c->student_id, c->student_name, c->teacher_id, c->teacher_name, c->date, c->topic, c->notes);
+    fclose(fp);
+    printf("Counseling record added.\n");
+}
+
+// Show counseling records for a student
+void showCounselings(const char *student_id) {
+    FILE *fp = fopen(COUNSELING_FILE, "r");
+    if (!fp) {
+        printf("No counseling records found.\n");
+        return;
+    }
+
+    Counseling c;
+    int found = 0;
+    printf("Counseling records for student ID: %s\n", student_id);
+    printf("------------------------------------\n");
+
+    while (fscanf(fp, "%19[^|]|%49[^|]|%19[^|]|%49[^|]|%19[^|]|%99[^|]|%299[^\n]\n",
+                  c.student_id, c.student_name, c.teacher_id, c.teacher_name, c.date, c.topic, c.notes) == 7) {
+        if (strcmp(c.student_id, student_id) == 0) {
+            found = 1;
+            printf("Date: %s\nTeacher: %s (%s)\nTopic: %s\nNotes: %s\n--------------------------\n",
+                   c.date, c.teacher_name, c.teacher_id, c.topic, c.notes);
+        }
+    }
+    fclose(fp);
+
+    if (!found) {
+        printf("No counseling records found for this student.\n");
+    }
+}
+
+// Update counseling (match by student_id

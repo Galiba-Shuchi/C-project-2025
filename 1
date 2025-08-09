@@ -1,0 +1,587 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <ctype.h>
+
+// Structures
+typedef struct {
+    char student_id[20];
+    char name[50];
+    char password[50];
+    char student_role[10];
+} user;
+
+typedef struct {
+    char teacher_id[20];
+    char name[50];
+    char password[50];
+    char subject[30];
+} teacher;
+
+typedef struct {
+    char admin_id[20];
+    char name[50];
+    char password[50];
+    char admin_role[10];
+} admin;
+
+typedef struct {
+    char course_name[100];
+    char course_code[20];
+} Course;
+
+typedef struct {
+    char course_code[20];
+    char question[300];
+    char option_a[100];
+    char option_b[100];
+    char option_c[100];
+    char option_d[100];
+    char check;
+} MCQ;
+
+typedef struct {
+    char question[300];
+    char correct_answer;
+    char student_answer;
+} WrongAnswer;
+
+typedef struct {
+    char student_id[20];
+    char course_code[20];
+    int score;
+} ExamResult;
+
+typedef struct {
+    char student_id[20];
+    char student_name[50];
+    char teacher_id[20];
+    char teacher_name[50];
+    char date[20];
+    char topic[100];
+    char notes[300];
+} Counseling;
+
+typedef struct {
+    char title[100];
+    char course_code[20];
+    char media_type[20];
+    char url[200];
+} MediaLink;
+
+// --- Function Declarations ---
+void registerUser ();
+int loginUser ();
+void displayUser (const user *u);
+void updateUser (user *u);
+void deleteUser (user *u);
+void registerTeacher();
+int loginTeacher();
+void displayTeacher(const teacher *t);
+void updateTeacher(teacher *t);
+void deleteTeacher(teacher *t);
+void registerAdmin(const char *admin_role);
+int loginAdmin();
+void displayAdmin(const admin *a);
+void addCourse();
+void showCourses();
+void updateCourse();
+void deleteCourse();
+void addQuestion();
+void showQuestionsForAdmin();
+void updateQuestion();
+void deleteQuestion();
+void studentExam(const char *student_id, const char *course_code);
+void examRules();
+void showAllResults(const char *student_id);
+void addExamResult(ExamResult *result);
+void displayExamResult(const ExamResult *result);
+void addCounseling(const Counseling *c);
+void showCounselings(const char *student_id);
+void updateCounseling(const char *student_id, const char *date);
+void deleteCounseling(const char *student_id, const char *date);
+void addMediaLink(const MediaLink *m);
+void showMediaLinks(const char *course_code);
+void updateMediaLink(const char *course_code, const char *title);
+void deleteMediaLink(const char *course_code, const char *title);
+void adminMenu();
+void teacherMenu();
+void studentMenu();
+void clearInputBuffer();
+int verifySpecialCode(const char *role);
+int verifyTeacherCode();
+
+// Function to clear input buffer
+void clearInputBuffer() {
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
+}
+
+// Admin registration function
+void registerAdmin(const char *admin_role) {
+    admin a;
+
+    printf("Enter Admin ID: ");
+    scanf("%19s", a.admin_id);
+    printf("Enter Name: ");
+    scanf(" %[^\n]", a.name);
+    printf("Enter Password: ");
+    scanf("%49s", a.password);
+
+    strcpy(a.admin_role, admin_role);
+
+    FILE *fp = fopen("admin.txt", "a");
+    if (!fp) {
+        perror("Error opening admin file");
+        return;
+    }
+    fprintf(fp, "%s|%s|%s|%s\n", a.admin_id, a.name, a.password, a.admin_role);
+    fclose(fp);
+
+    printf("Admin registered successfully!\n");
+}
+
+// Admin login function
+int loginAdmin() {
+    char id[20], password[50];
+    printf("Enter Admin ID: ");
+    scanf("%19s", id);
+    printf("Enter Password: ");
+    scanf("%49s", password);
+
+    FILE *fp = fopen("admin.txt", "r");
+    if (!fp) {
+        perror("Error opening admin file");
+        return 0; // failed login
+    }
+
+    admin a;
+    int found = 0;
+    while (fscanf(fp, "%19[^|]|%49[^|]|%49[^|]|%9[^\n]\n", a.admin_id, a.name, a.password, a.admin_role) == 4) {
+        if (strcmp(id, a.admin_id) == 0 && strcmp(password, a.password) == 0) {
+            found = 1;
+            break;
+        }
+    }
+    fclose(fp);
+
+    if (found) {
+        printf("✅ Admin login successful. Welcome, %s!\n", a.name);
+        return 1;  // success
+    } else {
+        printf("❌ Login failed. Invalid ID or password.\n");
+        return 0;  // fail
+    }
+}
+
+// Teacher registration function
+void registerTeacher() {
+    teacher t;
+
+    printf("Enter Teacher ID: ");
+    scanf("%19s", t.teacher_id);
+    printf("Enter Name: ");
+    scanf(" %[^\n]", t.name);
+    printf("Enter Password: ");
+    scanf("%49s", t.password);
+    printf("Enter Subject: ");
+    scanf(" %[^\n]", t.subject);
+
+    FILE *fp = fopen("teacher.txt", "a");
+    if (!fp) {
+        perror("Error opening teacher file");
+        return;
+    }
+    fprintf(fp, "%s|%s|%s|%s\n", t.teacher_id, t.name, t.password, t.subject);
+    fclose(fp);
+
+    printf("Teacher registered successfully!\n");
+}
+
+// Teacher login function
+int loginTeacher() {
+    char id[20], password[50];
+    printf("Enter Teacher ID: ");
+    scanf("%19s", id);
+    printf("Enter Password: ");
+    scanf("%49s", password);
+
+    FILE *fp = fopen("teacher.txt", "r");
+    if (!fp) {
+        perror("Error opening teacher file");
+        return 0; // failed login
+    }
+
+    teacher t;
+    int found = 0;
+    while (fscanf(fp, "%19[^|]|%49[^|]|%49[^|]|%29[^\n]\n", t.teacher_id, t.name, t.password, t.subject) == 4) {
+        if (strcmp(id, t.teacher_id) == 0 && strcmp(password, t.password) == 0) {
+            found = 1;
+            break;
+        }
+    }
+    fclose(fp);
+
+    if (found) {
+        printf("✅ Teacher login successful. Welcome, %s!\n", t.name);
+        return 1;  // success
+    } else {
+        printf("❌ Login failed. Invalid ID or password.\n");
+        return 0;  // fail
+    }
+}
+
+// User registration function
+void registerUser () {
+    user u;
+
+    printf("Enter Student ID: ");
+    scanf("%19s", u.student_id);
+    printf("Enter Name: ");
+    scanf(" %[^\n]", u.name);
+    printf("Enter Password: ");
+    scanf("%49s", u.password);
+
+    // You can set role here if needed, e.g. "student"
+    strcpy(u.student_role, "student");
+
+    FILE *fp = fopen("user.txt", "a");
+    if (!fp) {
+        perror("Error opening user file");
+        return;
+    }
+    fprintf(fp, "%s|%s|%s|%s\n", u.student_id, u.name, u.password, u.student_role);
+    fclose(fp);
+
+    printf("User  registered successfully!\n");
+}
+
+// User login function
+int loginUser () {
+    char id[20], password[50];
+    printf("Enter Student ID: ");
+    scanf("%19s", id);
+    printf("Enter Password: ");
+    scanf("%49s", password);
+
+    FILE *fp = fopen("user.txt", "r");
+    if (!fp) {
+        perror("Error opening user file");
+        return 0; // failed login
+    }
+
+    user u;
+    int found = 0;
+    while (fscanf(fp, "%19[^|]|%49[^|]|%49[^|]|%9[^\n]\n", u.student_id, u.name, u.password, u.student_role) == 4) {
+        if (strcmp(id, u.student_id) == 0 && strcmp(password, u.password) == 0) {
+            found = 1;
+            break;
+        }
+    }
+    fclose(fp);
+
+    if (found) {
+        printf("✅ User login successful. Welcome, %s!\n", u.name);
+        return 1;  // success
+    } else {
+        printf("❌ Login failed. Invalid ID or password.\n");
+        return 0;  // fail
+    }
+}
+
+// Update user function
+void updateUser (user *u) {
+    if (u == NULL) {
+        printf("Invalid user pointer.\n");
+        return;
+    }
+
+    FILE *fp = fopen("user.txt", "r");
+    FILE *temp = fopen("temp.txt", "w");
+    if (!fp || !temp) {
+        perror("File error");
+        if (fp) fclose(fp);
+        if (temp) fclose(temp);
+        return;
+    }
+
+    user tempUser ;
+    int found = 0;
+
+    while (fscanf(fp, "%19[^|]|%49[^|]|%49[^|]|%9[^\n]\n", tempUser .student_id, tempUser .name, tempUser .password, tempUser .student_role) == 4) {
+        if (strcmp(tempUser .student_id, u->student_id) == 0) {
+            found = 1;
+            // Write updated user info passed in 'u'
+            fprintf(temp, "%s|%s|%s|%s\n", u->student_id, u->name, u->password, u->student_role);
+        } else {
+            // Write existing user info as-is
+            fprintf(temp, "%s|%s|%s|%s\n", tempUser .student_id, tempUser .name, tempUser .password, tempUser .student_role);
+        }
+    }
+
+    fclose(fp);
+    fclose(temp);
+
+    if (!found) {
+        printf("User  with ID %s not found.\n", u->student_id);
+        remove("temp.txt");
+        return;
+    }
+
+    remove("user.txt");
+    rename("temp.txt", "user.txt");
+    printf("User  updated successfully.\n");
+}
+
+// Delete user function
+void deleteUser (user *u) {
+    if (u == NULL) {
+        printf("Invalid user pointer.\n");
+        return;
+    }
+
+    FILE *fp = fopen("user.txt", "r");
+    FILE *temp = fopen("temp.txt", "w");
+    if (!fp || !temp) {
+        perror("File error");
+        if (fp) fclose(fp);
+        if (temp) fclose(temp);
+        return;
+    }
+
+    user tempUser ;
+    int found = 0;
+
+    while (fscanf(fp, "%19[^|]|%49[^|]|%49[^|]|%9[^\n]\n", tempUser .student_id, tempUser .name, tempUser .password, tempUser .student_role) == 4) {
+        if (strcmp(tempUser .student_id, u->student_id) == 0) {
+            found = 1;
+            // skip writing this user to delete
+            continue;
+        }
+        fprintf(temp, "%s|%s|%s|%s\n", tempUser .student_id, tempUser .name, tempUser .password, tempUser .student_role);
+    }
+
+    fclose(fp);
+    fclose(temp);
+
+    if (!found) {
+        printf("User  with ID %s not found.\n", u->student_id);
+        remove("temp.txt");
+        return;
+    }
+
+    remove("user.txt");
+    rename("temp.txt", "user.txt");
+    printf("User  deleted successfully.\n");
+}
+
+// Display teacher function
+void displayTeacher(const teacher *t) {
+    printf("Teacher ID: %s\n", t->teacher_id);
+    printf("Name: %s\n", t->name);
+    printf("Subject: %s\n", t->subject);
+}
+
+// Update teacher function
+void updateTeacher(teacher *t) {
+    if (t == NULL) {
+        printf("Invalid teacher pointer.\n");
+        return;
+    }
+
+    // Admin verification prompt before proceeding
+    char adminCode[50];
+    const char *correctAdminCode = "ADMIN123";
+
+    printf("Enter admin verification code to update teacher: ");
+    scanf("%49s", adminCode);
+
+    if (strcmp(adminCode, correctAdminCode) != 0) {
+        printf("❌ Access denied. Invalid admin code.\n");
+        return;
+    }
+
+    FILE *fp = fopen("teacher.txt", "r");
+    FILE *temp = fopen("temp.txt", "w");
+    if (!fp || !temp) {
+        perror("File error");
+        if(fp) fclose(fp);
+        if(temp) fclose(temp);
+        return;
+    }
+
+    teacher tempTeacher;
+    int found = 0;
+
+    while (fscanf(fp, "%19[^|]|%49[^|]|%49[^|]|%29[^\n]\n", tempTeacher.teacher_id, tempTeacher.name, tempTeacher.password, tempTeacher.subject) == 4) {
+        if (strcmp(tempTeacher.teacher_id, t->teacher_id) == 0) {
+            found = 1;
+            // Write updated teacher info
+            fprintf(temp, "%s|%s|%s|%s\n", t->teacher_id, t->name, t->password, t->subject);
+        } else {
+            fprintf(temp, "%s|%s|%s|%s\n", tempTeacher.teacher_id, tempTeacher.name, tempTeacher.password, tempTeacher.subject);
+        }
+    }
+
+    fclose(fp);
+    fclose(temp);
+
+    if (!found) {
+        printf("Teacher with ID %s not found.\n", t->teacher_id);
+        remove("temp.txt");
+        return;
+    }
+
+    remove("teacher.txt");
+    rename("temp.txt", "teacher.txt");
+
+    printf("Teacher updated successfully.\n");
+}
+
+// Delete teacher function
+void deleteTeacher(teacher *t) {
+    if (t == NULL) {
+        printf("Invalid teacher pointer.\n");
+        return;
+    }
+
+    // Admin verification prompt
+    char adminCode[50];
+    const char *correctAdminCode = "ADMIN123";
+
+    printf("Enter admin verification code to delete teacher: ");
+    scanf("%49s", adminCode);
+
+    if (strcmp(adminCode, correctAdminCode) != 0) {
+        printf("❌ Access denied. Invalid admin code.\n");
+        return;
+    }
+
+    FILE *fp = fopen("teacher.txt", "r");
+    FILE *temp = fopen("temp.txt", "w");
+    if (!fp || !temp) {
+        perror("File error");
+        if(fp) fclose(fp);
+        if(temp) fclose(temp);
+        return;
+    }
+
+    teacher tempTeacher;
+    int found = 0;
+
+    while (fscanf(fp, "%19[^|]|%49[^|]|%49[^|]|%29[^\n]\n", tempTeacher.teacher_id, tempTeacher.name, tempTeacher.password, tempTeacher.subject) == 4) {
+        if (strcmp(tempTeacher.teacher_id, t->teacher_id) == 0) {
+            found = 1;
+            // skip writing to delete
+            continue;
+        }
+        fprintf(temp, "%s|%s|%s|%s\n", tempTeacher.teacher_id, tempTeacher.name, tempTeacher.password, tempTeacher.subject);
+    }
+
+    fclose(fp);
+    fclose(temp);
+
+    if (!found) {
+        printf("Teacher with ID %s not found.\n", t->teacher_id);
+        remove("temp.txt");
+        return;
+    }
+
+    remove("teacher.txt");
+    rename("temp.txt", "teacher.txt");
+
+    printf("Teacher deleted successfully.\n");
+}
+
+// Add Course Function
+void addCourse() {
+    char adminCode[50];
+    const char *correctAdminCode = "ADMIN123";
+
+    printf("Enter admin verification code to add course: ");
+    scanf("%49s", adminCode);
+
+    if (strcmp(adminCode, correctAdminCode) != 0) {
+        printf("❌ Access denied. Invalid admin code.\n");
+        return;
+    }
+
+    Course c;
+    printf("Enter course name: ");
+    clearInputBuffer(); // Clear any leftover input
+    fgets(c.course_name, sizeof(c.course_name), stdin);
+    c.course_name[strcspn(c.course_name, "\n")] = '\0';
+
+    printf("Enter course code: ");
+    scanf("%19s", c.course_code);
+
+    FILE *fp = fopen("course.txt", "a");
+    if (!fp) {
+        perror("File open error");
+        return;
+    }
+
+    fprintf(fp, "%s|%s\n", c.course_name, c.course_code);
+    fclose(fp);
+
+    printf("Course added successfully.\n");
+}
+
+// Show Courses Function
+void showCourses() {
+    FILE *fp = fopen("course.txt", "r");
+    if (!fp) {
+        printf("No courses found.\n");
+        return;
+    }
+
+    Course c;
+    printf("Course List:\n");
+    printf("---------------\n");
+    while (fscanf(fp, "%99[^|]|%19[^\n]\n", c.course_name, c.course_code) == 2) {
+        printf("Course Name: %s\n", c.course_name);
+        printf("Course Code: %s\n", c.course_code);
+        printf("---------------\n");
+    }
+    fclose(fp);
+}
+
+// Update Course Function
+void updateCourse() {
+    char adminCode[50];
+    const char *correctAdminCode = "ADMIN123";
+
+    printf("Enter admin verification code to update course: ");
+    scanf("%49s", adminCode);
+
+    if (strcmp(adminCode, correctAdminCode) != 0) {
+        printf("❌ Access denied. Invalid admin code.\n");
+        return;
+    }
+
+    char code[20];
+    printf("Enter course code to update: ");
+    scanf("%19s", code);
+
+    FILE *fp = fopen("course.txt", "r");
+    FILE *temp = fopen("temp.txt", "w");
+    if (!fp || !temp) {
+        perror("File error");
+        if (fp) fclose(fp);
+        if (temp) fclose(temp);
+        return;
+    }
+
+    Course c;
+    int found = 0;
+
+    while (fscanf(fp, "%99[^|]|%19[^\n]\n", c.course_name, c.course_code) == 2) {
+        if (strcmp(c.course_code, code) == 0) {
+            found = 1;
+            printf("Enter new course name: ");
+            clearInputBuffer();
+            fgets(c.course_name, sizeof(c.course_name), stdin);
+            c.course_name[strcspn(c.course_name, "\n")] = '\0';
+
+            printf("Enter new course code: ");
+            scanf("%19s", c.course_code

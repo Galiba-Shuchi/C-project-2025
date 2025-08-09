@@ -1,0 +1,348 @@
+// Update counseling (match by student_id and date)
+void updateCounseling(const char *student_id, const char *date) {
+    FILE *fp = fopen(COUNSELING_FILE, "r");
+    FILE *temp = fopen("temp.txt", "w");
+    if (!fp || !temp) {
+        printf("Error opening files.\n");
+        return;
+    }
+
+    Counseling c;
+    int updated = 0;
+
+    while (fscanf(fp, "%19[^|]|%49[^|]|%19[^|]|%49[^|]|%19[^|]|%99[^|]|%299[^\n]\n",
+                  c.student_id, c.student_name, c.teacher_id, c.teacher_name, c.date, c.topic, c.notes) == 7) {
+        if (strcmp(c.student_id, student_id) == 0 && strcmp(c.date, date) == 0) {
+            updated = 1;
+            printf("Enter new topic: ");
+            fgets(c.topic, sizeof(c.topic), stdin);
+            c.topic[strcspn(c.topic, "\n")] = '\0';
+
+            printf("Enter new notes: ");
+            fgets(c.notes, sizeof(c.notes), stdin);
+            c.notes[strcspn(c.notes, "\n")] = '\0';
+        }
+        fprintf(temp, "%s|%s|%s|%s|%s|%s|%s\n", c.student_id, c.student_name, c.teacher_id, c.teacher_name, c.date, c.topic, c.notes);
+    }
+
+    fclose(fp);
+    fclose(temp);
+
+    if (updated) {
+        remove(COUNSELING_FILE);
+        rename("temp.txt", COUNSELING_FILE);
+        printf("Counseling record updated.\n");
+    } else {
+        remove("temp.txt");
+        printf("Record not found.\n");
+    }
+}
+
+// Delete counseling (match by student_id and date)
+void deleteCounseling(const char *student_id, const char *date) {
+    FILE *fp = fopen(COUNSELING_FILE, "r");
+    FILE *temp = fopen("temp.txt", "w");
+    if (!fp || !temp) {
+        printf("Error opening files.\n");
+        return;
+    }
+
+    Counseling c;
+    int deleted = 0;
+
+    while (fscanf(fp, "%19[^|]|%49[^|]|%19[^|]|%49[^|]|%19[^|]|%99[^|]|%299[^\n]\n",
+                  c.student_id, c.student_name, c.teacher_id, c.teacher_name, c.date, c.topic, c.notes) == 7) {
+        if (strcmp(c.student_id, student_id) == 0 && strcmp(c.date, date) == 0) {
+            deleted = 1;
+            continue;
+        }
+        fprintf(temp, "%s|%s|%s|%s|%s|%s|%s\n", c.student_id, c.student_name, c.teacher_id, c.teacher_name, c.date, c.topic, c.notes);
+    }
+
+    fclose(fp);
+    fclose(temp);
+
+    if (deleted) {
+        remove(COUNSELING_FILE);
+        rename("temp.txt", COUNSELING_FILE);
+        printf("Counseling record deleted.\n");
+    } else {
+        remove("temp.txt");
+        printf("Record not found.\n");
+    }
+}
+
+// Add media link
+void addMediaLink(const MediaLink *m) {
+    FILE *fp = fopen(MEDIA_FILE, "a");
+    if (!fp) {
+        printf("Error opening media file.\n");
+        return;
+    }
+    fprintf(fp, "%s|%s|%s|%s\n", m->title, m->course_code, m->media_type, m->url);
+    fclose(fp);
+    printf("Media link added.\n");
+}
+
+// Show all media links for a course
+void showMediaLinks(const char *course_code) {
+    FILE *fp = fopen(MEDIA_FILE, "r");
+    if (!fp) {
+        printf("No media links found.\n");
+        return;
+    }
+
+    MediaLink m;
+    int found = 0;
+
+    printf("Media links for course: %s\n", course_code);
+    printf("-----------------------------\n");
+
+    while (fscanf(fp, "%99[^|]|%19[^|]|%19[^|]|%199[^\n]\n", m.title, m.course_code, m.media_type, m.url) == 4) {
+        if (strcmp(m.course_code, course_code) == 0) {
+            found = 1;
+            printf("Title: %s\nType: %s\nURL: %s\n------------------\n", m.title, m.media_type, m.url);
+        }
+    }
+
+    fclose(fp);
+
+    if (!found) {
+        printf("No media links found for this course.\n");
+    }
+}
+
+// Update media link by course_code and title
+void updateMediaLink(const char *course_code, const char *title) {
+    FILE *fp = fopen(MEDIA_FILE, "r");
+    FILE *temp = fopen("temp_media.txt", "w");
+    if (!fp || !temp) {
+        printf("Error opening files.\n");
+        return;
+    }
+
+    MediaLink m;
+    int updated = 0;
+
+    while (fscanf(fp, "%99[^|]|%19[^|]|%19[^|]|%199[^\n]\n", m.title, m.course_code, m.media_type, m.url) == 4) {
+        if (strcmp(m.course_code, course_code) == 0 && strcmp(m.title, title) == 0) {
+            updated = 1;
+            printf("Updating media link '%s' for course '%s'\n", title, course_code);
+            printf("Enter new media type: ");
+            fgets(m.media_type, sizeof(m.media_type), stdin);
+            m.media_type[strcspn(m.media_type, "\n")] = '\0';
+
+            printf("Enter new URL: ");
+            fgets(m.url, sizeof(m.url), stdin);
+            m.url[strcspn(m.url, "\n")] = '\0';
+        }
+        fprintf(temp, "%s|%s|%s|%s\n", m.title, m.course_code, m.media_type, m.url);
+    }
+
+    fclose(fp);
+    fclose(temp);
+
+    if (updated) {
+        remove(MEDIA_FILE);
+        rename("temp_media.txt", MEDIA_FILE);
+        printf("Media link updated.\n");
+    } else {
+        remove("temp_media.txt");
+        printf("Media link not found.\n");
+    }
+}
+
+// Delete media link by course_code and title
+void deleteMediaLink(const char *course_code, const char *title) {
+    FILE *fp = fopen(MEDIA_FILE, "r");
+    FILE *temp = fopen("temp_media.txt", "w");
+    if (!fp || !temp) {
+        printf("Error opening files.\n");
+        return;
+    }
+
+    MediaLink m;
+    int deleted = 0;
+
+    while (fscanf(fp, "%99[^|]|%19[^|]|%19[^|]|%199[^\n]\n", m.title, m.course_code, m.media_type, m.url) == 4) {
+        if (strcmp(m.course_code, course_code) == 0 && strcmp(m.title, title) == 0) {
+            deleted = 1;
+            continue;
+        }
+        fprintf(temp, "%s|%s|%s|%s\n", m.title, m.course_code, m.media_type, m.url);
+    }
+
+    fclose(fp);
+    fclose(temp);
+
+    if (deleted) {
+        remove(MEDIA_FILE);
+        rename("temp_media.txt", MEDIA_FILE);
+        printf("Media link deleted.\n");
+    } else {
+        remove("temp_media.txt");
+        printf("Media link not found.\n");
+    }
+}
+
+// Admin Menu
+void adminMenu() {
+    int choice;
+    while (1) {
+        printf("\n--- Admin Menu ---\n");
+        printf("1. View Course\n");
+        printf("2. Update Course\n");
+        printf("3. Add Course\n");
+        printf("4. Delete Course\n");
+        printf("5. Logout\n");
+        printf("Enter choice: ");
+        scanf("%d", &choice);
+        clearInputBuffer();
+
+        switch (choice) {
+            case 1: showCourses(); break;
+            case 2: updateCourse(); break;
+            case 3: addCourse(); break;
+            case 4: deleteCourse(); break;
+            case 5: printf("Logging out...\n"); return;
+            default: printf("Invalid choice. Please try again.\n");
+        }
+    }
+}
+
+// Teacher Menu
+void teacherMenu() {
+    int choice;
+    while (1) {
+        printf("\n--- Teacher Menu ---\n");
+        printf("1. Registration\n");
+        printf("2. Login\n");
+        printf("3. View Course\n");
+        printf("4. Update Question\n");
+        printf("5. Add Question\n");
+        printf("6. Delete Question\n");
+        printf("7. Add Video\n");
+        printf("8. Add Web\n");
+        printf("9. Add PDF\n");
+        printf("10. Show All Results\n");
+        printf("11. Counseling Messages\n");
+        printf("12. Logout\n");
+        printf("Enter choice: ");
+        scanf("%d", &choice);
+        clearInputBuffer();
+
+        switch (choice) {
+            case 1: registerTeacher(); break;
+            case 2: 
+                if (loginTeacher()) {
+                    // Show teacher options after successful login
+                    printf("Teacher options...\n"); // Placeholder for teacher options
+                }
+                break;
+            case 3: showCourses(); break;
+            case 4: updateQuestion(); break;
+            case 5: addQuestion(); break;
+            case 6: deleteQuestion(); break;
+            case 7: {
+                MediaLink m;
+                printf("Enter Title: ");
+                scanf(" %[^\n]", m.title);
+                printf("Enter Course Code: ");
+                scanf("%19s", m.course_code);
+                printf("Enter Media Type: ");
+                scanf(" %[^\n]", m.media_type);
+                printf("Enter URL: ");
+                scanf(" %[^\n]", m.url);
+                addMediaLink(&m);
+                break;
+            }
+            case 8: {
+                char course_code[20];
+                printf("Enter Course Code: ");
+                scanf("%19s", course_code);
+                showMediaLinks(course_code);
+                break;
+            }
+            case 9: {
+                char course_code[20], title[100];
+                printf("Enter Course Code: ");
+                scanf("%19s", course_code);
+                printf("Enter Title: ");
+                scanf(" %[^\n]", title);
+                updateMediaLink(course_code, title);
+                break;
+            }
+            case 10: showAllResults(""); break; // Placeholder
+            case 11: showCounselings(""); break; // Placeholder
+            case 12: printf("Logging out...\n"); return;
+            default: printf("Invalid choice. Please try again.\n");
+        }
+    }
+}
+
+// Student Menu
+void studentMenu() {
+    int choice;
+    while (1) {
+        printf("\n--- Student Menu ---\n");
+        printf("1. Registration\n");
+        printf("2. Login\n");
+        printf("3. Logout\n");
+        printf("Enter choice: ");
+        scanf("%d", &choice);
+        clearInputBuffer();
+
+        switch (choice) {
+            case 1: registerUser (); break;
+            case 2: 
+                if (loginUser ()) {
+                    // Show student options after successful login
+                    printf("Student options...\n"); // Placeholder for student options
+                }
+                break;
+            case 3:
+                printf("Logging out...\n");
+                return;
+            default:
+                printf("Invalid choice. Please try again.\n");
+        }
+    }
+}
+
+// Main Menu
+void showMainMenu() {
+    int choice;
+    while (1) {
+        printf("\n=== Online Exam System ===\n");
+        printf("--- Main Menu ---\n");
+        printf("1. Student Menu\n");
+        printf("2. Teacher Menu\n");
+        printf("3. Admin Menu\n");
+        printf("4. Exit\n");
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
+        clearInputBuffer();
+
+        switch (choice) {
+            case 1:
+                studentMenu();
+                break;
+            case 2:
+                teacherMenu();
+                break;
+            case 3:
+                adminMenu();
+                break;
+            case 4:
+                printf("Exiting program. Bye!\n");
+                return;
+            default:
+                printf("Invalid choice. Please try again.\n");
+        }
+    }
+}
+
+int main() {
+    showMainMenu();
+    return 0;
+}
